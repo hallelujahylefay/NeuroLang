@@ -24,7 +24,7 @@ from ....logic import (
     LogicOperator,
     NaryLogicOperator,
     UniversalPredicate,
-    Disjunction
+    Disjunction,
 )
 from ....probabilistic.expressions import (
     PROB,
@@ -55,8 +55,7 @@ class LogicWeakEquivalence(ExpressionWalker):
         left, right = expression.args
         if left.head != right.head:
             new_head = Symbol.fresh()
-            rew = ReplaceExpressionWalker(
-                {left.head: new_head, right.head: new_head})
+            rew = ReplaceExpressionWalker({left.head: new_head, right.head: new_head})
             left = rew.walk(left)
             right = rew.walk(right)
 
@@ -79,8 +78,7 @@ class LogicWeakEquivalence(ExpressionWalker):
         return all(
             self.walk(EQ(a1, a2))
             for a1, a2 in zip(
-                sorted(left.formulas, key=repr), sorted(
-                    right.formulas, key=repr)
+                sorted(left.formulas, key=repr), sorted(right.formulas, key=repr)
             )
         )
 
@@ -152,8 +150,7 @@ def datalog_base():
     datalog.add_extensional_predicate_from_tuples(Symbol("voxel"), [(0, 0, 0)])
     datalog.add_extensional_predicate_from_tuples(Symbol("focus"), [(0, 0, 0)])
 
-    datalog.add_extensional_predicate_from_tuples(
-        Symbol("report"), [(0, 0, 0, 0)])
+    datalog.add_extensional_predicate_from_tuples(Symbol("report"), [(0, 0, 0, 0)])
 
     return datalog
 
@@ -181,8 +178,7 @@ def test_rules():
         """,
         type_predicate_symbols={"element"},
     )
-    expected = Union(
-        (Implication(A(x), Conjunction((B(x, y), C(Constant(3), z)))),))
+    expected = Union((Implication(A(x), Conjunction((B(x, y), C(Constant(3), z)))),))
     assert weak_logic_eq(res, expected)
 
     res = parser(
@@ -206,8 +202,7 @@ def test_rules():
         (
             Implication(
                 A(x),
-                Conjunction((B(x, y), C(Constant(3), z),
-                            Constant(eq)(z, Constant(4)))),
+                Conjunction((B(x, y), C(Constant(3), z), Constant(eq)(z, Constant(4)))),
             ),
         )
     )
@@ -238,8 +233,7 @@ def test_rules():
                                     f,
                                     (
                                         Constant(add)(
-                                            x, Constant(mul)(
-                                                Constant(5), Constant(2))
+                                            x, Constant(mul)(Constant(5), Constant(2))
                                         ),
                                     ),
                                 ),
@@ -309,8 +303,7 @@ def test_transitive_rules():
     expected = Union(
         (
             Implication(
-                relate(x, fresh), Conjunction(
-                    (B(x, y), join(y, fresh, z, fresh1)))
+                relate(x, fresh), Conjunction((B(x, y), join(y, fresh, z, fresh1)))
             ),
         )
     )
@@ -328,8 +321,7 @@ def test_transitive_rules():
     expected = Union(
         (
             Implication(
-                relate(x, fresh, z), Conjunction(
-                    (B(x, y), join(y, fresh, z, fresh1)))
+                relate(x, fresh, z), Conjunction((B(x, y), join(y, fresh, z, fresh1)))
             ),
         )
     )
@@ -411,8 +403,7 @@ def test_aggregation_with_parameter(datalog_simple):
         (
             Implication(
                 aggregation_symbol(
-                    AggregationApplication(
-                        Symbol("percentile"), (y, Constant(95)))
+                    AggregationApplication(Symbol("percentile"), (y, Constant(95)))
                 ),
                 item(y),
             ),
@@ -446,8 +437,7 @@ def test_intransitive_per_conditional(datalog_simple):
         active(x, y, z, PROB(x, y, z)),
         Condition(
             Conjunction((focus(x, y, z), study(s), report(s, x, y, z))),
-            Conjunction((mention(s, t), term(
-                t), synonym(t, Constant("pain")))),
+            Conjunction((mention(s, t), term(t), synonym(t, Constant("pain")))),
         ),
     )
 
@@ -465,8 +455,7 @@ def test_intransitive_per_conditional(datalog_simple):
         syn_active(t, PROB(t)),
         Condition(
             Conjunction((focus(x, y, z), study(s), report(s, x, y, z))),
-            Conjunction((mention(s, t), term(
-                t), synonym(t, Constant("pain")))),
+            Conjunction((mention(s, t), term(t), synonym(t, Constant("pain")))),
         ),
     )
 
@@ -501,8 +490,7 @@ def test_transitive_per_conditional(datalog_simple):
         related(x, y, z, t, PROB(x, y, z, t)),
         Condition(
             Conjunction((focus(x, y, z), study(s), report(s, x, y, z))),
-            Conjunction((mention(s, t), term(
-                t), synonym(t, Constant("pain")))),
+            Conjunction((mention(s, t), term(t), synonym(t, Constant("pain")))),
         ),
     )
 
@@ -510,6 +498,17 @@ def test_transitive_per_conditional(datalog_simple):
     datalog_simple.walk(logic_code)
 
     assert weak_logic_eq(logic_code.formulas[0], expected)
+
+
+def test_min(datalog_simple):
+    code = """
+        define as test every Focus (@x; @y; @z)
+            such that min((@x) ** 2, (@y) ** 2, (@z) ** 2) is lower than 25 or 
+            such that max((@x) ** 2, (@y) ** 2, (@z) ** 2) is greater than 50.
+    """
+
+    logic_code = parser(code)
+    datalog_simple.walk(logic_code)
 
 
 def test_server_example_VWFA(datalog_simple):
@@ -539,96 +538,110 @@ def test_server_example_VWFA(datalog_simple):
         obtain every Term @t with every Quantity @lor such that @t `specific to the VWFA` with @lor.
     """
 
-    x = Symbol('x')
-    y = Symbol('y')
-    z = Symbol('z')
-    focus = Symbol('focus')
-    vwfa = Symbol('vwfa')
+    expected = []
+
+    x = Symbol("x")
+    y = Symbol("y")
+    z = Symbol("z")
+    focus = Symbol("focus")
+    vwfa = Symbol("vwfa")
     fresh1 = Symbol.fresh()
     fresh2 = Symbol.fresh()
-    expected1 = Implication(
-        vwfa(x, y, z),
-        Conjunction(
-            (
-                focus(x, y, z),
-                EQ(
-                    fresh1,
-                    ADD(
+    expected.append(
+        Implication(
+            vwfa(x, y, z),
+            Conjunction(
+                (
+                    focus(x, y, z),
+                    EQ(
+                        fresh1,
                         ADD(
-                            POW(SUB(
-                                x, Constant(-45)), Constant(2)),
-                            POW(SUB(
-                                y, Constant(-57)), Constant(2)),
+                            ADD(
+                                POW(SUB(x, Constant(-45)), Constant(2)),
+                                POW(SUB(y, Constant(-57)), Constant(2)),
+                            ),
+                            POW(SUB(z, Constant(-12)), Constant(2)),
                         ),
-                        POW(SUB(
-                            z, Constant(-12)), Constant(2)),
                     ),
-                ),
-                LT(fresh1, fresh2),
-                EQ(fresh2, POW(Constant(5), Constant(2))),
-            )
-        ),
+                    LT(fresh1, fresh2),
+                    EQ(fresh2, POW(Constant(5), Constant(2))),
+                )
+            ),
+        )
     )
 
-    VWFA_imag = Symbol('vwfa imag')
+    VWFA_imag = Symbol("vwfa imag")
     created_region = Symbol("created region")
     x_f = Symbol.fresh()
     y_f = Symbol.fresh()
     z_f = Symbol.fresh()
     fresh3 = Symbol.fresh()
     fresh4 = Symbol.fresh()
+    expected.append(
+        Implication(
+            fresh3(
+                AggregationApplication(created_region, (x_f, y_f, z_f)),
+            ),
+            vwfa(x_f, y_f, z_f),
+        )
+    )
+    expected.append(Implication(VWFA_imag(fresh4), fresh3(fresh4)))
 
-    expected2 = Implication(fresh3(AggregationApplication(created_region, (x_f, y_f, z_f)), ),
-                            vwfa(x_f, y_f, z_f),
-                            )
-    expected3 = Implication(VWFA_imag(fresh4), fresh3(fresh4))
-
-    mentions_vwfa = Symbol('mentions vwfa')
-    study = Symbol('study')
+    mentions_vwfa = Symbol("mentions vwfa")
+    study = Symbol("study")
     s_f = Symbol.fresh()
     report = Symbol("report")
-
-    expected4 = Implication(
-        mentions_vwfa(s_f), Conjunction((study(s_f), vwfa(
-            x_f, y_f, z_f), report(s_f, x_f, y_f, z_f)))
+    expected.append(
+        Implication(
+            mentions_vwfa(s_f),
+            Conjunction((study(s_f), vwfa(x_f, y_f, z_f), report(s_f, x_f, y_f, z_f))),
+        )
     )
 
     given_studi = Symbol("given studi")
     count_of_studies = Symbol.fresh()
     prob = Symbol.fresh()
-
-    expected5 = Implication(
-        count_of_studies(
-            AggregationApplication(Symbol('count'), (s_f,)),
-        ),
-        study(s_f),
+    expected.append(
+        Implication(
+            count_of_studies(
+                AggregationApplication(Symbol("count"), (s_f,)),
+            ),
+            study(s_f),
+        )
     )
 
-    expected6 = Implication(
-        ProbabilisticChoice(prob, given_studi(s_f)),
-        Conjunction((study(s_f), EQ(prob, DIV(Constant(1), count_of_studies)))
-                    ))
+    c = Symbol.fresh()
+    expected.append(
+        Implication(
+            ProbabilisticChoice(prob, given_studi(s_f)),
+            Conjunction(
+                (study(s_f), EQ(prob, DIV(Constant(1), c)), count_of_studies(c))
+            ),
+        )
+    )
 
-    linked_to_vwfa = Symbol('linked to vwfa')
+    linked_to_vwfa = Symbol("linked to vwfa")
     t_f = Symbol.fresh()
     s = Symbol("s")
     mention = Symbol("mention")
     term = Symbol("term")
-
-    expected7 = Implication(
-        linked_to_vwfa(t_f, PROB(t_f)),
-        Condition(
-            Conjunction((term(t_f), mention(s, t_f), study(s))),
-            Conjunction((given_studi(s), mentions_vwfa(s))),
-        ),
+    expected.append(
+        Implication(
+            linked_to_vwfa(t_f, PROB(t_f)),
+            Condition(
+                Conjunction((term(t_f), mention(s, t_f), study(s))),
+                Conjunction((given_studi(s), mentions_vwfa(s))),
+            ),
+        )
     )
 
     universal = Symbol("universal")
     mention = Symbol("mention")
-
-    expected8 = Implication(
-        universal(t_f, PROB(t_f)), Conjunction(
-            (term(t_f), mention(s_f, t_f), given_studi(s_f)))
+    expected.append(
+        Implication(
+            universal(t_f, PROB(t_f)),
+            Conjunction((term(t_f), mention(s_f, t_f), given_studi(s_f))),
+        )
     )
 
     specific_to_the_vwfa = Symbol("specific to the vwfa")
@@ -639,41 +652,37 @@ def test_server_example_VWFA(datalog_simple):
     linked_to_vwfa = Symbol("linked to vwfa")
     quantity = Symbol("quantity")
     fresh5 = Symbol.fresh()
-
-    expected9 = Implication(
-        specific_to_the_vwfa(t_f, lor),
-        Conjunction(
-            (
-                quantity(lor),
-                term(t_f),
-                linked_to_vwfa(t_f, p),
-                probability(p),
-                universal(t_f, p0),
-                probability(p0),
-                EQ(fresh5, Symbol('log10')(Constant(truediv)(p, p0))),
-                EQ(fresh5, lor)
-            )
-        ),
+    expected.append(
+        Implication(
+            specific_to_the_vwfa(t_f, lor),
+            Conjunction(
+                (
+                    quantity(lor),
+                    term(t_f),
+                    linked_to_vwfa(t_f, p),
+                    probability(p),
+                    universal(t_f, p0),
+                    probability(p0),
+                    EQ(fresh5, Symbol("log10")(Constant(truediv)(p, p0))),
+                    EQ(fresh5, lor),
+                )
+            ),
+        )
     )
 
-    t = Symbol('t')
-    expected10 = Query(Symbol.fresh()(t, lor), Conjunction((term(t), quantity(lor), specific_to_the_vwfa(t, lor))))
+    t = Symbol("t")
+    expected.append(
+        Query(
+            Symbol.fresh()(t, lor),
+            Conjunction((term(t), quantity(lor), specific_to_the_vwfa(t, lor))),
+        )
+    )
 
     logic_code = parser(code)
     datalog_simple.walk(logic_code)
-    print(logic_code)
-    assert weak_logic_eq(logic_code.formulas[0], expected1)
-    assert weak_logic_eq(
-        logic_code.formulas[1], expected2)
-    assert weak_logic_eq(logic_code.formulas[2], expected3)
-    assert weak_logic_eq(logic_code.formulas[3], expected4)
-    assert weak_logic_eq(
-        logic_code.formulas[4], expected5) and weak_logic_eq(logic_code.formulas[5], expected6)
-    assert weak_logic_eq(logic_code.formulas[6], expected7)
-    assert weak_logic_eq(
-        logic_code.formulas[7], expected8) 
-    assert weak_logic_eq(logic_code.formulas[8], expected9)
-    assert weak_logic_eq(logic_code.formulas[9], expected10)
+    for i in range(len(logic_code.formulas)):
+        assert weak_logic_eq(logic_code.formulas[i], expected[i])
+
 
 def test_server_example_activation_map(datalog_simple):
     code = """
@@ -698,6 +707,8 @@ def test_server_example_activation_map(datalog_simple):
       obtain every Image.
     """
 
+    expected = []
+
     study = Symbol("study")
     s = Symbol("s")
     term = Symbol("term")
@@ -709,100 +720,131 @@ def test_server_example_activation_map(datalog_simple):
     t_f2 = Symbol.fresh()
     mention = Symbol("mention")
 
-    expected = Implication(
-        study_of_interest(s),
-        Conjunction(
-            (
-                study(s),
-                Negation(
-                    ExistentialPredicate(
-                        tf,
+    expected.append(
+        Implication(
+            study_of_interest(s),
+            Conjunction(
+                (
+                    study(s),
+                    Negation(
                         ExistentialPredicate(
-                            t_f,
-                            Conjunction(
-                                (
-                                    mention(s, t_f, tf),
-                                    term(t_f),
-                                    EQ(t_f, Constant("auditory")),
-                                    tfidf(tf),
-                                    GT(tf, Constant(0)),
-                                )
+                            tf,
+                            ExistentialPredicate(
+                                t_f,
+                                Conjunction(
+                                    (
+                                        mention(s, t_f, tf),
+                                        term(t_f),
+                                        EQ(t_f, Constant("auditory")),
+                                        tfidf(tf),
+                                        GT(tf, Constant(0)),
+                                    )
+                                ),
                             ),
-                        ),
-                    )
-                ),
-                tfidf(tf2),
-                GT(tf2, Constant(0.0001)),
-                mention(s, t_f2, tf2),
-                term(t_f2),
-                Disjunction((EQ(t_f2, Constant("language")),
-                            EQ(t_f2, Constant("memory")))),
-            )
-        ),
+                        )
+                    ),
+                    tfidf(tf2),
+                    GT(tf2, Constant(0.0001)),
+                    mention(s, t_f2, tf2),
+                    term(t_f2),
+                    Disjunction(
+                        (EQ(t_f2, Constant("language")), EQ(t_f2, Constant("memory")))
+                    ),
+                )
+            ),
+        )
     )
 
-    fx = Symbol('fx')
-    fy = Symbol('fy')
-    fz = Symbol('fz')
-    x = Symbol('x')
-    y = Symbol('y')
-    z = Symbol('z')
-    focus = Symbol('focus')
-    report = Symbol('report')
+    fx = Symbol("fx")
+    fy = Symbol("fy")
+    fz = Symbol("fz")
+    x = Symbol("x")
+    y = Symbol("y")
+    z = Symbol("z")
+    focus = Symbol("focus")
+    report = Symbol("report")
     s_f = Symbol.fresh()
     dist = Symbol.fresh()
-    reports_as_active = Symbol('reports as act')
-    voxel = Symbol('voxel')
-    expected1 = Implication(reports_as_active(s_f, x, y, z), Conjunction(
-        (voxel(x, y, z), study(s_f), report(s_f, fx, fy, fz), focus(fx, fy, fz),
-         EQ(dist, Symbol('EUCLIDEAN')(x, y, z, fx, fy, fz)),
-         LT(dist, Constant(4)))))
+    reports_as_active = Symbol("reports as act")
+    voxel = Symbol("voxel")
+    expected.append(
+        Implication(
+            reports_as_active(s_f, x, y, z),
+            Conjunction(
+                (
+                    voxel(x, y, z),
+                    study(s_f),
+                    report(s_f, fx, fy, fz),
+                    focus(fx, fy, fz),
+                    EQ(dist, Symbol("EUCLIDEAN")(x, y, z, fx, fy, fz)),
+                    LT(dist, Constant(4)),
+                )
+            ),
+        )
+    )
 
     given_studi = Symbol("given studi")
     count_of_studies = Symbol.fresh()
     prob = Symbol.fresh()
-
-    expected2 = Implication(
-        count_of_studies(
-            AggregationApplication(Symbol('count'), (s_f,)),
-        ),
-        study(s_f),
+    expected.append(
+        Implication(
+            count_of_studies(
+                AggregationApplication(Symbol("count"), (s_f,)),
+            ),
+            study(s_f),
+        )
     )
-    expected3 = Implication(
-        ProbabilisticChoice(prob, given_studi(s_f)),
-        Conjunction((study(s_f), EQ(prob, DIV(Constant(1), count_of_studies)))
-                    ))
+
+    c = Symbol.fresh()
+    expected.append(
+        Implication(
+            ProbabilisticChoice(prob, given_studi(s_f)),
+            Conjunction(
+                (study(s_f), EQ(prob, DIV(Constant(1), c)), count_of_studies(c))
+            ),
+        )
+    )
 
     x_f = Symbol.fresh()
     y_f = Symbol.fresh()
     z_f = Symbol.fresh()
-    active = Symbol('active')
-
-    expected4 = Implication(active(x_f, y_f, z_f, PROB(x_f, y_f, z_f)),
-                            Condition(Conjunction((reports_as_active(s, x_f, y_f, z_f), voxel(x_f, y_f, z_f))), Conjunction((given_studi(s), study_of_interest(s)))))
+    active = Symbol("active")
+    expected.append(
+        Implication(
+            active(x_f, y_f, z_f, PROB(x_f, y_f, z_f)),
+            Condition(
+                Conjunction(
+                    (reports_as_active(s, x_f, y_f, z_f), voxel(x_f, y_f, z_f))
+                ),
+                Conjunction((given_studi(s), study_of_interest(s))),
+            ),
+        )
+    )
 
     images = Symbol.fresh()
-    created_region_overlay = Symbol('created region overlay')
-    tupl = Symbol('tupl')
-    probability = Symbol('probability')
-    p = Symbol('p')
-
-    expected5 = Implication(images(AggregationApplication(created_region_overlay, (x, y, z, p))),
-                            Conjunction((tupl(x, y, z, p), voxel(x, y, z),  active(x, y, z, p), probability(p))))
+    created_region_overlay = Symbol("created region overlay")
+    tupl = Symbol("tupl")
+    probability = Symbol("probability")
+    p = Symbol("p")
+    expected.append(
+        Implication(
+            images(AggregationApplication(created_region_overlay, (x, y, z, p))),
+            Conjunction(
+                (tupl(x, y, z, p), voxel(x, y, z), active(x, y, z, p), probability(p))
+            ),
+        )
+    )
 
     image_f = Symbol.fresh()
     image = Symbol("image")
-    expected6 = Query(images(image_f), image(image_f))
+    expected.append(Implication(image(image_f), images(image_f)))
+    expected.append(Query(images(image_f), image(image_f)))
 
     logic_code = parser(code)
     datalog_simple.walk(logic_code)
-    assert weak_logic_eq(logic_code.formulas[0], expected)
-    assert weak_logic_eq(logic_code.formulas[1], expected1)
-    assert weak_logic_eq(logic_code.formulas[2], expected2) and weak_logic_eq(
-        logic_code.formulas[3], expected3)
-    assert weak_logic_eq(logic_code.formulas[4], expected4)
-    assert weak_logic_eq(logic_code.formulas[5], expected5)
-    assert weak_logic_eq(logic_code.formulas[6], expected6)
+    for i in range(len(logic_code.formulas)):
+        assert weak_logic_eq(logic_code.formulas[i], expected[i])
+
 
 def test_command_syntax():
     res = parser("#load_csv(@A, 'http://myweb/file.csv', @B).")
@@ -828,8 +870,7 @@ def test_command_syntax():
     assert res == expected
 
     res = parser("#load_csv(sep=',').")
-    expected = Union(
-        (Command("load_csv", (), ((Symbol("sep"), Constant(",")),)),))
+    expected = Union((Command("load_csv", (), ((Symbol("sep"), Constant(",")),)),))
     assert res == expected
 
     res = parser("#load_csv(sep=',', header=@None, index_col=0).")
@@ -848,8 +889,7 @@ def test_command_syntax():
     )
     assert res == expected
 
-    res = parser(
-        "#load_csv(@A, 'http://myweb/file.csv', sep=',', header=@None).")
+    res = parser("#load_csv(@A, 'http://myweb/file.csv', sep=',', header=@None).")
     expected = Union(
         (
             Command(
